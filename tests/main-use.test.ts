@@ -1,34 +1,6 @@
-import { expect, jest, mock, test } from "bun:test"
+import { createClock, DAY, delay, HOUR, MINUTE, SECOND, withFakeTimers } from "./utils"
 import { TIME_BUFFER, updatedAt } from "../src"
-import { delay } from "./utils"
-
-const SECOND = 1000
-const MINUTE = 60 * SECOND
-const HOUR = 60 * MINUTE
-const DAY = 24 * HOUR
-const MAX_STEP = 20 * DAY
-
-const withFakeTimers = (fn: () => void) => {
-    jest.useFakeTimers()
-    jest.setSystemTime(new Date("2026-11-25T12:00:00.000Z"))
-    try {
-        fn()
-    } finally {
-        jest.useRealTimers()
-    }
-}
-
-const createClock = (startTime: number) => {
-    const advanceTo = (elapsedMs: number) => {
-        const targetTime = startTime + elapsedMs + TIME_BUFFER
-        while (Date.now() < targetTime) {
-            const remaining = targetTime - Date.now()
-            jest.advanceTimersByTime(Math.min(remaining, MAX_STEP))
-        }
-    }
-
-    return { advanceTo }
-}
+import { expect, mock, test } from "bun:test"
 
 test("Must show 2 first messages correctly in real time", async () => {
     const timeNow = Date.now()

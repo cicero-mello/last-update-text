@@ -2,6 +2,7 @@ import type { StatusTexts, UpdatedAtParams, UpdatedAtResponse } from "./types"
 import { defaultStatusTexts } from "./texts"
 
 const MAX_TIMEOUT_MS = 2_147_483_647 // ~24.8 days (integer 32-bit timer limit)
+export const TIME_BUFFER = 100
 
 const secondToMs = (second: number) => second * 1000
 const minuteToMs = (minute: number) => minute * 1000 * 60
@@ -37,7 +38,7 @@ export const updatedAt = ({
         clearPendingTimeout()
         if (isCancelled || !onStatusChange) return
 
-        const safeDelay = Math.max(0, Math.min(delayMs + 100, MAX_TIMEOUT_MS))
+        const safeDelay = Math.max(0, Math.min(delayMs + TIME_BUFFER, MAX_TIMEOUT_MS))
 
         timeoutId = setTimeout(() => {
             if (isCancelled) return

@@ -233,3 +233,39 @@ test("Must stop future updates when calling cancelTimers", () => withFakeTimers(
 
     expect(onStatusChange).toHaveBeenLastCalledWith("just now")
 }))
+
+test("Must respect exact second boundaries before and after transitions", () => withFakeTimers(() => {
+    const lastUpdate = Date.now()
+    const { advanceTo } = createClock(lastUpdate)
+    const onStatusChange = mock((_text?: string) => { })
+
+    const { initialStatus, cancelTimers } = lastUpdateText({
+        lastUpdate,
+        onStatusChange
+    })
+
+    try {
+        expect(initialStatus).toBe("just now")
+        expect(onStatusChange).toHaveBeenCalledTimes(1)
+        expect(onStatusChange).toHaveBeenLastCalledWith("just now")
+
+        advanceTo(10 * SECOND - 1)
+        expect(onStatusChange).toHaveBeenCalledTimes(1)
+        expect(onStatusChange).toHaveBeenLastCalledWith("just now")
+
+        advanceTo(10 * SECOND)
+        expect(onStatusChange).toHaveBeenCalledTimes(2)
+        expect(onStatusChange).toHaveBeenLastCalledWith("less than a minute ago")
+
+        const remainingBeforeSixtySeconds = (60 * SECOND - 1) - (Date.now() - lastUpdate)
+        advanceTo(remainingBeforeSixtySeconds)
+        expect(onStatusChange).toHaveBeenCalledTimes(2)
+        expect(onStatusChange).toHaveBeenLastCalledWith("less than a minute ago")
+
+        advanceTo(60 * SECOND)
+        expect(onStatusChange).toHaveBeenCalledTimes(3)
+        expect(onStatusChange).toHaveBeenLastCalledWith("1 minute ago")
+    } finally {
+        cancelTimers()
+    }
+}))

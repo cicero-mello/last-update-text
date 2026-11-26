@@ -1,6 +1,6 @@
-import type { StatusTexts } from "./types"
+import type { StatusOptions } from "./types"
 
-export const defaultStatusTexts: StatusTexts = {
+export const defaultStatusOptions: StatusOptions = {
     justNow: "just now",
     lessThanAMinuteAgo: "less than a minute ago",
     oneMinuteAgo: "1 minute ago",

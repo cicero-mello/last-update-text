@@ -1,9 +1,9 @@
 import { createClock, DAY, HOUR, MINUTE, SECOND, withFakeTimers } from "./utils"
-import type { StatusTexts } from "../src/types"
+import type { StatusOptions } from "../src/types"
 import { expect, mock, test } from "bun:test"
-import { updatedAt } from "../src"
+import { lastUpdateText } from "../src"
 
-const customPtBrTexts: StatusTexts = {
+const customPtBrStatusText: StatusOptions = {
     justNow: "agora mesmo",
     lessThanAMinuteAgo: "há menos de um minuto",
     oneMinuteAgo: "há 1 minuto",
@@ -24,15 +24,15 @@ test("Must apply all custom statusTexts across every time range", () => withFake
     const { advanceTo } = createClock(lastUpdate)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { initialStatusText, cancelTimers } = updatedAt({
+    const { initialStatus, cancelTimers } = lastUpdateText({
         lastUpdate,
         onStatusChange,
-        statusTexts: customPtBrTexts
+        statusOptions: customPtBrStatusText
     })
 
     try {
         // 0: justNow
-        expect(initialStatusText).toBe("agora mesmo")
+        expect(initialStatus).toBe("agora mesmo")
 
         // 1: lessThanAMinuteAgo
         advanceTo(10 * SECOND)
@@ -91,10 +91,10 @@ test("Must merge partial statusTexts with defaultStatusTexts", () => withFakeTim
     const { advanceTo } = createClock(lastUpdate)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { initialStatusText, cancelTimers } = updatedAt({
+    const { initialStatus, cancelTimers } = lastUpdateText({
         lastUpdate,
         onStatusChange,
-        statusTexts: {
+        statusOptions: {
             justNow: "now!",
             xMinutesAgo: "# mins ago",
             yesterday: "1 day ago"
@@ -103,7 +103,7 @@ test("Must merge partial statusTexts with defaultStatusTexts", () => withFakeTim
 
     try {
         // Overwrite
-        expect(initialStatusText).toBe("now!")
+        expect(initialStatus).toBe("now!")
 
         // Standard
         advanceTo(10 * SECOND)
@@ -138,11 +138,11 @@ test("Must replace custom countPlaceholder in all pluralized statusTexts", () =>
     const { advanceTo } = createClock(lastUpdate)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { cancelTimers } = updatedAt({
+    const { cancelTimers } = lastUpdateText({
         lastUpdate,
         onStatusChange,
         countPlaceholder: "{count}",
-        statusTexts: {
+        statusOptions: {
             xMinutesAgo: "{count} mins",
             xHoursAgo: "{count} hrs",
             xDaysAgo: "{count} days",
@@ -175,17 +175,17 @@ test("Must keep literal '#' intact when using a custom countPlaceholder", () => 
     const fiveMinutesAgo = Date.now() - 5 * MINUTE
     const onStatusChange = mock((_text?: string) => { })
 
-    const { initialStatusText, cancelTimers } = updatedAt({
+    const { initialStatus, cancelTimers } = lastUpdateText({
         lastUpdate: fiveMinutesAgo,
         onStatusChange,
         countPlaceholder: "{{n}}",
-        statusTexts: {
+        statusOptions: {
             xMinutesAgo: "Update #{{n}} minutes ago"
         }
     })
 
     try {
-        expect(initialStatusText).toBe("Update #5 minutes ago")
+        expect(initialStatus).toBe("Update #5 minutes ago")
     } finally {
         cancelTimers()
     }

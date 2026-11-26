@@ -1,5 +1,5 @@
-import type { StatusTexts, UpdatedAtParams, UpdatedAtResponse } from "./types"
-import { defaultStatusTexts } from "./texts"
+import type { StatusOptions, LastUpdateTextParams, LastUpdateTextResponse } from "./types"
+import { defaultStatusOptions } from "./texts"
 
 const MAX_TIMEOUT_MS = 2_147_483_647 // ~24.8 days (integer 32-bit timer limit)
 export const TIME_BUFFER = 100
@@ -10,15 +10,15 @@ const hourToMs = (hour: number) => hour * 1000 * 60 * 60
 const dayToMs = (day: number) => day * 1000 * 60 * 60 * 24
 const monthToMs = (month: number) => month * 1000 * 60 * 60 * 24 * 30
 
-export const updatedAt = ({
+export const lastUpdateText = ({
     lastUpdate,
     onStatusChange,
-    statusTexts,
+    statusOptions,
     countPlaceholder = "#"
-}: UpdatedAtParams): UpdatedAtResponse => {
-    const texts: StatusTexts = {
-        ...defaultStatusTexts,
-        ...statusTexts
+}: LastUpdateTextParams): LastUpdateTextResponse => {
+    const texts: StatusOptions = {
+        ...defaultStatusOptions,
+        ...statusOptions
     }
 
     let timeoutId: ReturnType<typeof setTimeout> | undefined
@@ -42,7 +42,7 @@ export const updatedAt = ({
 
         timeoutId = setTimeout(() => {
             if (isCancelled) return
-            const newStatusText = calculateText(Date.now())
+            const newStatusText = calculateStatusText(Date.now())
             onStatusChange(newStatusText)
         }, safeDelay)
     }
@@ -51,7 +51,7 @@ export const updatedAt = ({
         template.replace(countPlaceholder, String(value))
     )
 
-    const calculateText = (currentTime: number): string => {
+    const calculateStatusText = (currentTime: number): string => {
         const deltaMilliseconds = Math.max(0, currentTime - lastUpdate)
         const deltaSeconds = Math.floor(deltaMilliseconds / 1000)
 
@@ -146,10 +146,11 @@ export const updatedAt = ({
         return texts.moreThanAYearAgo
     }
 
-    const initialStatusText = calculateText(Date.now())
+    const initialStatus = calculateStatusText(Date.now())
+    if (onStatusChange) onStatusChange(initialStatus)
 
     return {
-        initialStatusText,
+        initialStatus,
         cancelTimers
     }
 }

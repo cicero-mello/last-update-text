@@ -1,5 +1,4 @@
-
-export interface StatusTexts {
+export interface StatusOptions {
     justNow: string
     lessThanAMinuteAgo: string
     oneMinuteAgo: string
@@ -15,14 +14,14 @@ export interface StatusTexts {
     moreThanAYearAgo: string
 }
 
-export interface UpdatedAtParams {
+export interface LastUpdateTextParams {
     lastUpdate: number
-    onStatusChange?: (newStatusText: string) => void | Promise<void>
-    statusTexts?: Partial<StatusTexts>
+    onStatusChange?: (newStatus: string) => void | Promise<void>
+    statusOptions?: Partial<StatusOptions>
     countPlaceholder?: string
 }
 
-export interface UpdatedAtResponse {
-    initialStatusText: string
+export interface LastUpdateTextResponse {
+    initialStatus: string
     cancelTimers: () => void
 }

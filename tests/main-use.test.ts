@@ -1,27 +1,27 @@
 import { createClock, DAY, delay, HOUR, MINUTE, SECOND, withFakeTimers } from "./utils"
-import { TIME_BUFFER, updatedAt } from "../src"
+import { TIME_BUFFER, lastUpdateText } from "../src"
 import { expect, mock, test } from "bun:test"
 
 test("Must show 2 first messages correctly in real time", async () => {
     const timeNow = Date.now()
-    let updatedStatusText: string | undefined = ""
+    let updatedStatus: string | undefined = ""
 
-    const { initialStatusText, cancelTimers } = updatedAt({
+    const { initialStatus, cancelTimers } = lastUpdateText({
         lastUpdate: timeNow,
-        onStatusChange: (newStatusText) => {
-            updatedStatusText = newStatusText
+        onStatusChange: (newStatus) => {
+            updatedStatus = newStatus
         }
     })
 
     try {
-        expect(initialStatusText).toBe("just now")
-        expect(updatedStatusText).toBe("")
+        expect(initialStatus).toBe("just now")
+        expect(updatedStatus).toBe("just now")
 
         await delay(5 * SECOND)
-        expect(updatedStatusText).toEqual("")
+        expect(updatedStatus).toEqual("just now")
 
         await delay(5 * SECOND + TIME_BUFFER)
-        expect(updatedStatusText).toEqual("less than a minute ago")
+        expect(updatedStatus).toEqual("less than a minute ago")
     } finally {
         cancelTimers()
     }
@@ -32,14 +32,14 @@ test("Must progress through seconds, minutes, and hours in sequence", () => with
     const { advanceTo } = createClock(lastUpdate)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { initialStatusText, cancelTimers } = updatedAt({
+    const { initialStatus, cancelTimers } = lastUpdateText({
         lastUpdate,
         onStatusChange
     })
 
     try {
-        expect(initialStatusText).toBe("just now")
-        expect(onStatusChange).not.toHaveBeenCalled()
+        expect(initialStatus).toBe("just now")
+        expect(onStatusChange).toHaveBeenLastCalledWith("just now")
 
         advanceTo(10 * SECOND)
         expect(onStatusChange).toHaveBeenLastCalledWith("less than a minute ago")
@@ -86,13 +86,13 @@ test("Must progress through days, weeks, months and more than a year", () => wit
     const { advanceTo } = createClock(lastUpdate)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { initialStatusText, cancelTimers } = updatedAt({
+    const { initialStatus, cancelTimers } = lastUpdateText({
         lastUpdate,
         onStatusChange
     })
 
     try {
-        expect(initialStatusText).toBe("just now")
+        expect(initialStatus).toBe("just now")
 
         advanceTo(1 * DAY)
         expect(onStatusChange).toHaveBeenLastCalledWith("yesterday")
@@ -177,16 +177,16 @@ test("Must correctly calculate the initial state when lastUpdate is in the past"
     const { advanceTo } = createClock(thirtyFiveMinutesAgo)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { initialStatusText, cancelTimers } = updatedAt({
+    const { initialStatus, cancelTimers } = lastUpdateText({
         lastUpdate: thirtyFiveMinutesAgo,
         onStatusChange
     })
 
     try {
-        expect(initialStatusText).toBe("35 minutes ago")
+        expect(initialStatus).toBe("35 minutes ago")
 
         advanceTo(36 * MINUTE)
-        expect(onStatusChange).toHaveBeenCalledTimes(1)
+        expect(onStatusChange).toHaveBeenCalledTimes(2)
         expect(onStatusChange).toHaveBeenCalledWith("36 minutes ago")
     } finally {
         cancelTimers()
@@ -198,20 +198,20 @@ test("Must handle the transition from 28 days (4 weeks) to 30 days (1 month) wit
     const { advanceTo } = createClock(twentyEightDaysAgo)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { initialStatusText, cancelTimers } = updatedAt({
+    const { initialStatus, cancelTimers } = lastUpdateText({
         lastUpdate: twentyEightDaysAgo,
         onStatusChange
     })
 
     try {
-        expect(initialStatusText).toBe("4 weeks ago")
-        expect(onStatusChange).not.toHaveBeenCalled()
+        expect(initialStatus).toBe("4 weeks ago")
+        expect(onStatusChange).toHaveBeenLastCalledWith("4 weeks ago")
 
         advanceTo(29 * DAY)
-        expect(onStatusChange).not.toHaveBeenCalled()
+        expect(onStatusChange).toHaveBeenLastCalledWith("4 weeks ago")
 
         advanceTo(30 * DAY)
-        expect(onStatusChange).toHaveBeenCalledTimes(1)
+        expect(onStatusChange).toHaveBeenCalledTimes(2)
         expect(onStatusChange).toHaveBeenLastCalledWith("1 month ago")
     } finally {
         cancelTimers()
@@ -223,7 +223,7 @@ test("Must stop future updates when calling cancelTimers", () => withFakeTimers(
     const { advanceTo } = createClock(lastUpdate)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { cancelTimers } = updatedAt({
+    const { cancelTimers } = lastUpdateText({
         lastUpdate,
         onStatusChange
     })
@@ -231,5 +231,5 @@ test("Must stop future updates when calling cancelTimers", () => withFakeTimers(
     cancelTimers()
     advanceTo(5 * MINUTE)
 
-    expect(onStatusChange).not.toHaveBeenCalled()
+    expect(onStatusChange).toHaveBeenLastCalledWith("just now")
 }))

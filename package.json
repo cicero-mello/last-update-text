@@ -1,17 +1,19 @@
 {
     "name": "last-update-text",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Turns a timestamp into live-updating time-ago text, with customizable phrasing.",
     "type": "module",
+    "author": "Cícero Mello",
+    "license": "MIT",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
     "scripts": {
         "build": "tsup",
         "test": "bun test"
     },
     "devDependencies": {
         "@types/bun": "latest",
-        "tsup": "^9.0.0"
-    },
-    "peerDependencies": {
+        "tsup": "^9.0.0",
         "typescript": "^6"
     },
     "files": [

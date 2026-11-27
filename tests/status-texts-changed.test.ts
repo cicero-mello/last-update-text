@@ -1,7 +1,7 @@
 import { createClock, DAY, HOUR, MINUTE, SECOND, withFakeTimers } from "./utils"
 import type { StatusOptions } from "../src/types"
 import { expect, mock, test } from "bun:test"
-import { lastUpdateText } from "../src"
+import { lastUpdateText } from "../dist"
 
 const customPtBrStatusText: StatusOptions = {
     justNow: "agora mesmo",
@@ -24,10 +24,10 @@ test("Must apply all custom statusTexts across every time range", () => withFake
     const { advanceTo } = createClock(lastUpdate)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { initialStatus, cancelTimers } = lastUpdateText({
-        lastUpdate,
+    const { initialStatus, stop } = lastUpdateText({
+        since: lastUpdate,
         onStatusChange,
-        statusOptions: customPtBrStatusText
+        statusOptions: customPtBrStatusText,
     })
 
     try {
@@ -82,7 +82,7 @@ test("Must apply all custom statusTexts across every time range", () => withFake
         advanceTo(365 * DAY)
         expect(onStatusChange).toHaveBeenLastCalledWith("há mais de um ano")
     } finally {
-        cancelTimers()
+        stop()
     }
 }))
 
@@ -91,8 +91,8 @@ test("Must merge partial statusTexts with defaultStatusTexts", () => withFakeTim
     const { advanceTo } = createClock(lastUpdate)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { initialStatus, cancelTimers } = lastUpdateText({
-        lastUpdate,
+    const { initialStatus, stop } = lastUpdateText({
+        since: lastUpdate,
         onStatusChange,
         statusOptions: {
             justNow: "now!",
@@ -129,7 +129,7 @@ test("Must merge partial statusTexts with defaultStatusTexts", () => withFakeTim
         advanceTo(2 * DAY)
         expect(onStatusChange).toHaveBeenLastCalledWith("2 days ago")
     } finally {
-        cancelTimers()
+        stop()
     }
 }))
 
@@ -138,8 +138,8 @@ test("Must replace custom countPlaceholder in all pluralized statusTexts", () =>
     const { advanceTo } = createClock(lastUpdate)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { cancelTimers } = lastUpdateText({
-        lastUpdate,
+    const { stop } = lastUpdateText({
+        since: lastUpdate,
         onStatusChange,
         countPlaceholder: "{count}",
         statusOptions: {
@@ -167,7 +167,7 @@ test("Must replace custom countPlaceholder in all pluralized statusTexts", () =>
         advanceTo(120 * DAY)
         expect(onStatusChange).toHaveBeenLastCalledWith("4 mos")
     } finally {
-        cancelTimers()
+        stop()
     }
 }))
 
@@ -175,8 +175,8 @@ test("Must keep literal '#' intact when using a custom countPlaceholder", () => 
     const fiveMinutesAgo = Date.now() - 5 * MINUTE
     const onStatusChange = mock((_text?: string) => { })
 
-    const { initialStatus, cancelTimers } = lastUpdateText({
-        lastUpdate: fiveMinutesAgo,
+    const { initialStatus, stop } = lastUpdateText({
+        since: fiveMinutesAgo,
         onStatusChange,
         countPlaceholder: "{{n}}",
         statusOptions: {
@@ -187,6 +187,6 @@ test("Must keep literal '#' intact when using a custom countPlaceholder", () => 
     try {
         expect(initialStatus).toBe("Update #5 minutes ago")
     } finally {
-        cancelTimers()
+        stop()
     }
 }))

@@ -14,4 +14,4 @@ export const defaultStatusOptions: StatusOptions = {
     oneMonthAgo: "1 month ago",
     xMonthsAgo: "# months ago",
     moreThanAYearAgo: "more than a year ago"
-}
+} as const

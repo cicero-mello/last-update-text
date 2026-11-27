@@ -14,14 +14,28 @@ export interface StatusOptions {
     moreThanAYearAgo: string
 }
 
-export interface LastUpdateTextParams {
-    lastUpdate: number
-    onStatusChange?: (newStatus: string) => void | Promise<void>
+interface LastUpdateTextBaseParams {
+    since: number
     statusOptions?: Partial<StatusOptions>
     countPlaceholder?: string
 }
 
+interface LastUpdateTextWithAutoUpdate extends LastUpdateTextBaseParams {
+    autoUpdate?: true
+    onStatusChange?: (newStatus: string) => void | Promise<void>
+}
+
+interface LastUpdateTextWithoutAutoUpdate extends LastUpdateTextBaseParams {
+    autoUpdate: false
+    onStatusChange?: never
+}
+
+export type LastUpdateTextParams = (
+    LastUpdateTextWithAutoUpdate |
+    LastUpdateTextWithoutAutoUpdate
+)
+
 export interface LastUpdateTextResponse {
     initialStatus: string
-    cancelTimers: () => void
+    stop: () => void
 }

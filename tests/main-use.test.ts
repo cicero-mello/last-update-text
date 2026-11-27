@@ -1,13 +1,13 @@
 import { createClock, DAY, delay, HOUR, MINUTE, SECOND, withFakeTimers } from "./utils"
-import { TIME_BUFFER, lastUpdateText } from "../src"
+import { TIME_BUFFER, lastUpdateText } from "../dist"
 import { expect, mock, test } from "bun:test"
 
 test("Must show 2 first messages correctly in real time", async () => {
     const timeNow = Date.now()
     let updatedStatus: string | undefined = ""
 
-    const { initialStatus, cancelTimers } = lastUpdateText({
-        lastUpdate: timeNow,
+    const { initialStatus, stop } = lastUpdateText({
+        since: timeNow,
         onStatusChange: (newStatus) => {
             updatedStatus = newStatus
         }
@@ -23,7 +23,7 @@ test("Must show 2 first messages correctly in real time", async () => {
         await delay(5 * SECOND + TIME_BUFFER)
         expect(updatedStatus).toEqual("less than a minute ago")
     } finally {
-        cancelTimers()
+        stop()
     }
 }, 15_000)
 
@@ -32,8 +32,8 @@ test("Must progress through seconds, minutes, and hours in sequence", () => with
     const { advanceTo } = createClock(lastUpdate)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { initialStatus, cancelTimers } = lastUpdateText({
-        lastUpdate,
+    const { initialStatus, stop } = lastUpdateText({
+        since: lastUpdate,
         onStatusChange
     })
 
@@ -77,7 +77,7 @@ test("Must progress through seconds, minutes, and hours in sequence", () => with
         advanceTo(24 * HOUR)
         expect(onStatusChange).toHaveBeenLastCalledWith("yesterday")
     } finally {
-        cancelTimers()
+        stop()
     }
 }))
 
@@ -86,8 +86,8 @@ test("Must progress through days, weeks, months and more than a year", () => wit
     const { advanceTo } = createClock(lastUpdate)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { initialStatus, cancelTimers } = lastUpdateText({
-        lastUpdate,
+    const { initialStatus, stop } = lastUpdateText({
+        since: lastUpdate,
         onStatusChange
     })
 
@@ -168,17 +168,17 @@ test("Must progress through days, weeks, months and more than a year", () => wit
         advanceTo(395 * DAY)
         expect(onStatusChange).toHaveBeenCalledTimes(callsBeforeFinal)
     } finally {
-        cancelTimers()
+        stop()
     }
 }))
 
-test("Must correctly calculate the initial state when lastUpdate is in the past", () => withFakeTimers(() => {
+test("Must correctly calculate the initial state when 'since' is in the past", () => withFakeTimers(() => {
     const thirtyFiveMinutesAgo = Date.now() - 35 * MINUTE
     const { advanceTo } = createClock(thirtyFiveMinutesAgo)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { initialStatus, cancelTimers } = lastUpdateText({
-        lastUpdate: thirtyFiveMinutesAgo,
+    const { initialStatus, stop } = lastUpdateText({
+        since: thirtyFiveMinutesAgo,
         onStatusChange
     })
 
@@ -189,7 +189,7 @@ test("Must correctly calculate the initial state when lastUpdate is in the past"
         expect(onStatusChange).toHaveBeenCalledTimes(2)
         expect(onStatusChange).toHaveBeenCalledWith("36 minutes ago")
     } finally {
-        cancelTimers()
+        stop()
     }
 }))
 
@@ -198,8 +198,8 @@ test("Must handle the transition from 28 days (4 weeks) to 30 days (1 month) wit
     const { advanceTo } = createClock(twentyEightDaysAgo)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { initialStatus, cancelTimers } = lastUpdateText({
-        lastUpdate: twentyEightDaysAgo,
+    const { initialStatus, stop } = lastUpdateText({
+        since: twentyEightDaysAgo,
         onStatusChange
     })
 
@@ -214,21 +214,21 @@ test("Must handle the transition from 28 days (4 weeks) to 30 days (1 month) wit
         expect(onStatusChange).toHaveBeenCalledTimes(2)
         expect(onStatusChange).toHaveBeenLastCalledWith("1 month ago")
     } finally {
-        cancelTimers()
+        stop()
     }
 }))
 
-test("Must stop future updates when calling cancelTimers", () => withFakeTimers(() => {
+test("Must stop future updates when calling 'stop'", () => withFakeTimers(() => {
     const lastUpdate = Date.now()
     const { advanceTo } = createClock(lastUpdate)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { cancelTimers } = lastUpdateText({
-        lastUpdate,
+    const { stop } = lastUpdateText({
+        since: lastUpdate,
         onStatusChange
     })
 
-    cancelTimers()
+    stop()
     advanceTo(5 * MINUTE)
 
     expect(onStatusChange).toHaveBeenLastCalledWith("just now")
@@ -239,8 +239,8 @@ test("Must respect exact second boundaries before and after transitions", () => 
     const { advanceTo } = createClock(lastUpdate)
     const onStatusChange = mock((_text?: string) => { })
 
-    const { initialStatus, cancelTimers } = lastUpdateText({
-        lastUpdate,
+    const { initialStatus, stop } = lastUpdateText({
+        since: lastUpdate,
         onStatusChange
     })
 
@@ -266,6 +266,38 @@ test("Must respect exact second boundaries before and after transitions", () => 
         expect(onStatusChange).toHaveBeenCalledTimes(3)
         expect(onStatusChange).toHaveBeenLastCalledWith("1 minute ago")
     } finally {
-        cancelTimers()
+        stop()
     }
+}))
+
+test("Must return initialStatus without scheduling updates when autoUpdate is false", () => withFakeTimers(() => {
+    const start = Date.now()
+    const { advanceTo } = createClock(start)
+
+    const { initialStatus, stop } = lastUpdateText({
+        since: start,
+        autoUpdate: false
+    })
+
+    expect(initialStatus).toBe("just now")
+    advanceTo(5 * MINUTE)
+    expect(() => stop()).not.toThrow()
+}))
+
+test("Must not invoke onStatusChange when autoUpdate is false", () => withFakeTimers(() => {
+    const start = Date.now()
+    const { advanceTo } = createClock(start)
+    const onStatusChange = mock((_text?: string) => { })
+
+    // @ts-expect-error onStatusChange is not allowed when autoUpdate is false
+    const { initialStatus, stop } = lastUpdateText({
+        since: start,
+        autoUpdate: false,
+        onStatusChange
+    })
+
+    expect(initialStatus).toBe("just now")
+    advanceTo(5 * MINUTE)
+    expect(onStatusChange).not.toHaveBeenCalled()
+    expect(() => stop()).not.toThrow()
 }))

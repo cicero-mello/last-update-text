@@ -1,7 +1,7 @@
 import type { StatusOptions, LastUpdateTextParams, LastUpdateTextResponse } from "./types"
 import { defaultStatusOptions } from "./texts"
 
-const MAX_TIMEOUT_MS = 2_147_483_647 // ~24.8 days (integer 32-bit timer limit)
+const MAX_TIMEOUT_MS = 2_147_483_647// ~24.8 days (integer 32-bit timer limit)
 export const TIME_BUFFER = 100
 
 const secondToMs = (second: number) => second * 1000
@@ -10,11 +10,24 @@ const hourToMs = (hour: number) => hour * 1000 * 60 * 60
 const dayToMs = (day: number) => day * 1000 * 60 * 60 * 24
 const monthToMs = (month: number) => month * 1000 * 60 * 60 * 24 * 30
 
+export type { StatusOptions, LastUpdateTextParams, LastUpdateTextResponse }
+
+/**
+ * Turns a timestamp into live-updating time-ago text, with customizable phrasing.
+ *
+ * @param since - Unix timestamp in milliseconds of when the event occurred.
+ * @param onStatusChange - Callback invoked immediately with the initial status and whenever the text changes over time.
+ * @param statusOptions - Custom labels or translations used to override the default status messages.
+ * @param countPlaceholder - Character or string replaced by the time number in plural templates. Defaults to `"#"`.
+ * @param autoUpdate - Automatically updates the text over time via `onStatusChange`. Set to `false` to calculate only `initialStatus` without scheduling timers. Defaults to `true`.
+ * @returns An object containing the `initialStatus` string and a `stop` cleanup function to cancel future updates.
+ */
 export const lastUpdateText = ({
-    lastUpdate,
+    since,
     onStatusChange,
     statusOptions,
-    countPlaceholder = "#"
+    countPlaceholder = "#",
+    autoUpdate = true
 }: LastUpdateTextParams): LastUpdateTextResponse => {
     const texts: StatusOptions = {
         ...defaultStatusOptions,
@@ -29,12 +42,14 @@ export const lastUpdateText = ({
         timeoutId = undefined
     }
 
-    const cancelTimers = () => {
+    const stop = () => {
         isCancelled = true
         clearPendingTimeout()
     }
 
     const scheduleNextCheck = (delayMs: number) => {
+        if (!autoUpdate) return
+
         clearPendingTimeout()
         if (isCancelled || !onStatusChange) return
 
@@ -52,7 +67,7 @@ export const lastUpdateText = ({
     )
 
     const calculateStatusText = (currentTime: number): string => {
-        const deltaMilliseconds = Math.max(0, currentTime - lastUpdate)
+        const deltaMilliseconds = Math.max(0, currentTime - since)
         const deltaSeconds = Math.floor(deltaMilliseconds / 1000)
 
         if (deltaSeconds < 10) {
@@ -147,10 +162,10 @@ export const lastUpdateText = ({
     }
 
     const initialStatus = calculateStatusText(Date.now())
-    if (onStatusChange) onStatusChange(initialStatus)
+    if (onStatusChange && autoUpdate) onStatusChange(initialStatus)
 
     return {
         initialStatus,
-        cancelTimers
+        stop
     }
 }

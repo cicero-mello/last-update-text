@@ -1,15 +1,44 @@
 {
     "name": "last-update-text",
-    "module": "index.ts",
+    "version": "1.0.0",
+    "description": "Turns a timestamp into live-updating time-ago text, with customizable phrasing.",
     "type": "module",
-    "private": true,
     "scripts": {
-        "typecheck": "bun check"
+        "build": "tsup",
+        "test": "bun test"
     },
     "devDependencies": {
-        "@types/bun": "latest"
+        "@types/bun": "latest",
+        "tsup": "^9.0.0"
     },
     "peerDependencies": {
-        "typescript": "^7"
-    }
+        "typescript": "^6"
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/cicero-mello/last-update-text.git"
+    },
+    "bugs": {
+        "url": "https://github.com/cicero-mello/last-update-text/issues"
+    },
+    "keywords": [
+        "time-formatter",
+        "date-formatter",
+        "last-update",
+        "last-updated",
+        "live-time",
+        "auto-update",
+        "relative-time",
+        "time-ago",
+        "format",
+        "timestamp",
+        "i18n",
+        "ui",
+        "ux"
+    ]
 }
